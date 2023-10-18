@@ -78,7 +78,7 @@ contract Task4 with Deployable {
   nftOwner: Address?;
   
   init(seed: Int) {
-    self.seed = seed; // 하나의 admin 에서 여러 개의 스마트 컨트랙트 복사본을 배포해야 함
+    self.seed = seed; // needed to deploy multiple smart contracts copies from one admin address/
     self.nftLockTime = 0;
     self.nftAddress = null;
     self.nftOwner = null;
@@ -109,10 +109,9 @@ contract Task4 with Deployable {
 
   receive(msg: NftWithdrawal) {
     let ctx: Context = context();
-    require(self.nftLockTime > 0, "Invalid time");
     require(ctx.sender == self.nftOwner, "Invalid sender");
 
-    if (self.nftLockTime > now()) {
+    if (self.nftLockTime - now() > 0) {
       self.reply("NFT is still locked".asComment());
       // send(SendParameters{
       //   to: ctx.sender,
@@ -141,7 +140,7 @@ contract Task4 with Deployable {
   }
 
   get fun time(): Int {
-    return self.nftLockTime;
+    return self.nftLockTime - now();
   }
 
   get fun nft(): Address? {
