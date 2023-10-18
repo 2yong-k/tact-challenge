@@ -72,7 +72,6 @@ message NftWithdrawal {
 }
 
 contract Task4 with Deployable {
-  const MinTonForStorage: Int = ton("0.01");
   seed: Int as uint128;
   nftLockTime: Int as uint32;
   nftAddress: Address?;
@@ -89,7 +88,7 @@ contract Task4 with Deployable {
     let ctx: Context = context();
     if (self.nftAddress != null && self.nftOwner != null && self.nftLockTime != 0) {
       send(SendParameters{
-        to: ctx.sender,
+        to: msg.prevOwner,
         value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
@@ -124,8 +123,8 @@ contract Task4 with Deployable {
       // });   
     } else {
       send(SendParameters{
-        to: ctx.sender,
-        value: myBalance() - context().value - self.MinTonForStorage,
+        to: self.nftOwner!!,
+        value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
