@@ -73,7 +73,7 @@ message NftWithdrawal {
 
 contract Task4 with Deployable {
   seed: Int as uint128;
-  nftLockTime: Int = 0;
+  nftLockTime: Int as uint32 = 0;
   nftAddress: Address? = null;
   nftOwner: Address? = null;
   
@@ -110,12 +110,13 @@ contract Task4 with Deployable {
     require(ctx.sender == self.nftOwner, "Invalid sender");
 
     if (self.nftLockTime > now()) {
-      send(SendParameters{
-        to: ctx.sender,
-        value: 0,
-        mode: SendRemainingValue + SendIgnoreErrors,
-        body: "NFT is still locked".asComment()
-      });   
+      self.reply("NFT is still locked".asComment());
+      // send(SendParameters{
+      //   to: ctx.sender,
+      //   value: 0,
+      //   mode: SendRemainingValue + SendIgnoreErrors,
+      //   body: "NFT is still locked".asComment()
+      // });   
     } else {
       send(SendParameters{
         to: ctx.sender,
