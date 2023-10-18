@@ -91,7 +91,7 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: ctx.sender,
         value: 0,
-        bounce: false,
+        // bounce: false,
         mode: SendRemainingValue + SendIgnoreErrors,
         body: Transfer {
           queryId: 0,
@@ -126,7 +126,7 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: ctx.sender,
         value: myBalance() - context().value - self.MinTonForStorage,
-        bounce: false,
+        // bounce: false,
         mode: SendRemainingValue + SendIgnoreErrors,
         body: Transfer {
           queryId: 0,
