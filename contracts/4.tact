@@ -84,7 +84,7 @@ contract Task4 with Deployable {
     self.nftOwner = null;
   }
 
-  receive(msg: OwnershipAssigned) {
+  receive(msg: OwnershipAssigned) { // nft item contract -> OwnershipAssigned message -> nft lock contract -> Transfer message -> nft item contract
     let ctx: Context = context();
     if (self.nftAddress != null && self.nftOwner != null && self.nftLockTime != 0) {
       send(SendParameters{
@@ -124,7 +124,7 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: msg.nftAddress,
         value: 0,
-        mode: SendRemainingValue + SendIgnoreErrors,
+        mode: SendRemainingBalance + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
           queryId: 0,
