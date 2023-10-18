@@ -73,12 +73,15 @@ message NftWithdrawal {
 
 contract Task4 with Deployable {
   seed: Int as uint128;
-  nftLockTime: Int as uint32 = 0;
-  nftAddress: Address? = null;
-  nftOwner: Address? = null;
+  nftLockTime: Int as uint32;
+  nftAddress: Address?;
+  nftOwner: Address?;
   
   init(seed: Int) {
     self.seed = seed; // 하나의 admin 에서 여러 개의 스마트 컨트랙트 복사본을 배포해야 함
+    self.nftLockTime = 0;
+    self.nftAddress = null;
+    self.nftOwner = null;
   }
 
   receive(msg: OwnershipAssigned) {
