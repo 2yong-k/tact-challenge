@@ -91,13 +91,13 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: ctx.sender,
         value: 0,
-        // bounce: false,
         mode: SendRemainingValue + SendIgnoreErrors,
+        bounce: true,
         body: Transfer {
           queryId: 0,
           newOwner: msg.prevOwner,
           responseDestination: myAddress(),
-          customPayload: emptyCell(),
+          customPayload: null ,
           forwardAmount: ton("0.01"),
           forwardPayload: emptySlice()
         }.toCell()
@@ -126,13 +126,13 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: ctx.sender,
         value: myBalance() - context().value - self.MinTonForStorage,
-        // bounce: false,
         mode: SendRemainingValue + SendIgnoreErrors,
+        bounce: true,
         body: Transfer {
           queryId: 0,
           newOwner: self.nftOwner!!,
           responseDestination: myAddress(),
-          customPayload: emptyCell(),
+          customPayload: null,
           forwardAmount: ton("0.01"),
           forwardPayload: emptySlice()
         }.toCell()
