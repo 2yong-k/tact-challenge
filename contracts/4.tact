@@ -73,8 +73,8 @@ message NftWithdrawal {
 
 contract Task4 with Deployable {
   seed: Int as uint128;
-  nftAddress: Address? = null;
   nftLockTime: Int = 0;
+  nftAddress: Address? = null;
   nftOwner: Address? = null;
   
   init(seed: Int) {
@@ -82,7 +82,7 @@ contract Task4 with Deployable {
   }
 
   receive(msg: OwnershipAssigned) {
-    if (self.nftAddress != null) {
+    if (self.nftAddress != null && self.nftOwner != null && self.nftLockTime != 0) {
       send(SendParameters{
         to: sender(),
         value: 0,
@@ -97,13 +97,14 @@ contract Task4 with Deployable {
         }.toCell()
       });
     } else {
-      self.nftAddress = sender();
       self.nftLockTime = msg.forwardPayload.loadUint(32);
+      self.nftAddress = sender();
       self.nftOwner = msg.prevOwner;
     }
   }
 
   receive(msg: NftWithdrawal) {
+    require(self.nftLockTime > 0, "Invalid time");
     require(sender() == self.nftOwner, "Invalid sender");
 
     if (self.nftLockTime > now()) {
@@ -116,7 +117,7 @@ contract Task4 with Deployable {
     } else {
       send(SendParameters{
         to: sender(),
-        value: myBalance() - context().value,
+        value: 0,
         mode: SendRemainingBalance + SendIgnoreErrors,
         body: Transfer {
           queryId: 0,
