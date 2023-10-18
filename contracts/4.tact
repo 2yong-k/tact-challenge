@@ -72,13 +72,14 @@ message NftWithdrawal {
 }
 
 contract Task4 with Deployable {
+  const MinTonForStorage: Int = ton("0.01");
   seed: Int as uint128;
   nftLockTime: Int as uint32;
   nftAddress: Address?;
   nftOwner: Address?;
   
   init(seed: Int) {
-    self.seed = seed; // needed to deploy multiple smart contracts copies from one admin address/
+    self.seed = seed; // needed to deploy multiple smart contracts copies from one admin address
     self.nftLockTime = 0;
     self.nftAddress = null;
     self.nftOwner = null;
@@ -109,6 +110,7 @@ contract Task4 with Deployable {
 
   receive(msg: NftWithdrawal) {
     let ctx: Context = context();
+    require(self.nftAddress != null && self.nftOwner != null && self.nftLockTime != 0, "Invalid");
     require(ctx.sender == self.nftOwner, "Invalid sender");
 
     if (self.nftLockTime - now() > 0) {
@@ -122,8 +124,8 @@ contract Task4 with Deployable {
     } else {
       send(SendParameters{
         to: ctx.sender,
-        value: 0,
-        mode: SendRemainingBalance + SendIgnoreErrors,
+        value: myBalance() - context().value - self.MinTonForStorage,
+        mode: SendRemainingValue + SendIgnoreErrors,
         body: Transfer {
           queryId: 0,
           newOwner: self.nftOwner!!,
