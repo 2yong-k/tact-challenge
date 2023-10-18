@@ -96,7 +96,7 @@ contract Task4 with Deployable {
           queryId: 0,
           newOwner: msg.prevOwner,
           responseDestination: myAddress(),
-          customPayload: null,
+          customPayload: emptyCell(),
           forwardAmount: ton("0.01"),
           forwardPayload: emptySlice()
         }.toCell()
@@ -130,7 +130,7 @@ contract Task4 with Deployable {
           queryId: 0,
           newOwner: self.nftOwner!!,
           responseDestination: myAddress(),
-          customPayload: null,
+          customPayload: emptyCell(),
           forwardAmount: ton("0.01"),
           forwardPayload: emptySlice()
         }.toCell()
