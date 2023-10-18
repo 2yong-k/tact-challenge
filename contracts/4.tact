@@ -110,7 +110,7 @@ contract Task4 with Deployable {
     if (self.nftLockTime > now()) {
       send(SendParameters{
         to: sender(),
-        value: 0,
+        value: myBalance() - context().value,
         mode: SendRemainingValue + SendIgnoreErrors,
         body: "NFT is still locked".asComment()
       });   
@@ -128,6 +128,9 @@ contract Task4 with Deployable {
           forwardPayload: emptySlice()
         }.toCell()
       });
+      self.nftLockTime = 0;
+      self.nftAddress = null;
+      self.nftOwner = null;
     }
   }
 
