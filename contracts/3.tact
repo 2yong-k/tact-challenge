@@ -52,10 +52,10 @@ message(0xf8a7ea5) TokenTransfer {
 
 contract Task3 with Deployable {
   owner: Address;
-  aAmount: Int;
-  bAmount: Int;
   jettonAddressA: Address;
   jettonAddressB: Address;
+  aAmount: Int;
+  bAmount: Int;
   decimal: Int;
 
   init(admin: Address, newJettonAddressA: Address, newJettonAddressB: Address) {
@@ -67,12 +67,113 @@ contract Task3 with Deployable {
     self.decimal = 1000000000;
   }
 
-  receive(msg: TokenNotification) {
+    receive(msg: TokenNotification) {
+    require(sender() == self.jettonAddressA || sender() == self.jettonAddressB, "Invalid address");
+
+    if (sender() == self.jettonAddressA) { // A -> B swap
+      let amountOfBJettonToSend: Int = (self.bAmount * self.decimal / self.aAmount) * msg.amount / self.decimal;
+
+      if (msg.from == self.owner) { // if owner?
+        self.aAmount = self.aAmount + msg.amount;
+      } else {  // if user?
+        if (amountOfBJettonToSend > self.bAmount) { // if fail?
+          send(SendParameters{
+            to: self.jettonAddressA,
+            value: 0,
+            mode: SendIgnoreErrors,
+            bounce: true,
+            body: TokenTransfer {
+              queryId: 0,
+              amount: msg.amount,
+              destination: msg.from,
+              responseDestination: myAddress(),
+              customPayload: null,
+              forwardTonAmount: ton("0.01"),
+              forwardPayload: emptySlice()
+            }.toCell()
+          });
+        } else {  // if success?
+          send(SendParameters{
+            to: self.jettonAddressB,
+            value: 0,
+            mode: SendIgnoreErrors,
+            bounce: true,
+            body: TokenTransfer {
+              queryId: 0,
+              amount: amountOfBJettonToSend,
+              destination: msg.from,
+              responseDestination: myAddress(),
+              customPayload: null,
+              forwardTonAmount: ton("0.01"),
+              forwardPayload: emptySlice()
+            }.toCell()
+          });
+          self.aAmount = self.aAmount + msg.amount;
+          self.bAmount = self.bAmount - amountOfBJettonToSend;
+        }
+      }
+    } else {  // B -> A swap
+      let amountOfAJettonToSend: Int = (self.aAmount * self.decimal / self.bAmount) * msg.amount / self.decimal;
+
+      if (msg.from == self.owner) { // is owner?
+        self.bAmount = self.bAmount + msg.amount;
+      } else {  // is user?
+        if (amountOfAJettonToSend > self.aAmount) { // if fail?
+          send(SendParameters{
+            to: self.jettonAddressB,
+            value: 0,
+            mode: SendIgnoreErrors,
+            bounce: true,
+            body: TokenTransfer {
+              queryId: 0,
+              amount: msg.amount,
+              destination: msg.from,
+              responseDestination: myAddress(),
+              customPayload: null,
+              forwardTonAmount: ton("0.01"),
+              forwardPayload: emptySlice()
+            }.toCell()
+          });
+        } else {  // is success?
+          send(SendParameters{
+            to: self.jettonAddressA,
+            value: 0,
+            mode: SendIgnoreErrors,
+            bounce: true,
+            body: TokenTransfer {
+              queryId: 0,
+              amount: amountOfAJettonToSend,
+              destination: msg.from,
+              responseDestination: myAddress(),
+              customPayload: null,
+              forwardTonAmount: ton("0.01"),
+              forwardPayload: emptySlice()
+            }.toCell()
+          });
+          self.bAmount = self.bAmount + msg.amount;
+          self.aAmount = self.aAmount - amountOfAJettonToSend;
+        }
+      }
+    }
   } 
   
   get fun price(jetton: Address): Int { 
+    require(jetton == self.jettonAddressA || jetton == self.jettonAddressB, "Invalid address");
+    if (self.jettonAddressA == jetton) {
+      return self.bAmount * self.decimal / self.aAmount;
+    }
+    else {
+      return self.aAmount * self.decimal / self.bAmount;
+    }
   }
   
-  get fun balance(jetton: Address): Int { 
+  get fun balance(jetton: Address): Int {
+    require(jetton == self.jettonAddressA || jetton == self.jettonAddressB, "Invalid address");
+    if (self.jettonAddressA == jetton) {
+      return self.aAmount;
+    }
+    else {
+      return self.bAmount;
+    }
   }
 }
