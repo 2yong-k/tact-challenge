@@ -67,7 +67,7 @@ contract Task3 with Deployable {
     self.decimal = 1000000000;
   }
 
-    receive(msg: TokenNotification) {
+  receive(msg: TokenNotification) {
     require(sender() == self.jettonAddressA || sender() == self.jettonAddressB, "Invalid address");
 
     if (sender() == self.jettonAddressA) { // A -> B swap
@@ -83,11 +83,11 @@ contract Task3 with Deployable {
             mode: SendIgnoreErrors,
             bounce: true,
             body: TokenTransfer {
-              queryId: 0,
+              queryId: msg.queryId,
               amount: msg.amount,
               destination: msg.from,
               responseDestination: myAddress(),
-              customPayload: null,
+              customPayload: emptyCell(),
               forwardTonAmount: ton("0.01"),
               forwardPayload: emptySlice()
             }.toCell()
@@ -99,11 +99,11 @@ contract Task3 with Deployable {
             mode: SendIgnoreErrors,
             bounce: true,
             body: TokenTransfer {
-              queryId: 0,
+              queryId: msg.queryId,
               amount: amountOfBJettonToSend,
               destination: msg.from,
               responseDestination: myAddress(),
-              customPayload: null,
+              customPayload: emptyCell(),
               forwardTonAmount: ton("0.01"),
               forwardPayload: emptySlice()
             }.toCell()
@@ -125,11 +125,11 @@ contract Task3 with Deployable {
             mode: SendIgnoreErrors,
             bounce: true,
             body: TokenTransfer {
-              queryId: 0,
+              queryId: msg.queryId,
               amount: msg.amount,
               destination: msg.from,
               responseDestination: myAddress(),
-              customPayload: null,
+              customPayload: emptyCell(),
               forwardTonAmount: ton("0.01"),
               forwardPayload: emptySlice()
             }.toCell()
@@ -141,11 +141,11 @@ contract Task3 with Deployable {
             mode: SendIgnoreErrors,
             bounce: true,
             body: TokenTransfer {
-              queryId: 0,
+              queryId: msg.queryId,
               amount: amountOfAJettonToSend,
               destination: msg.from,
               responseDestination: myAddress(),
-              customPayload: null,
+              customPayload: emptyCell(),
               forwardTonAmount: ton("0.01"),
               forwardPayload: emptySlice()
             }.toCell()
