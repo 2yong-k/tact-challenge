@@ -159,43 +159,44 @@ contract Task5 with Deployable {
     }
   }
 
-  receive(msg: AdminWithdrawalProfit) {
-    let ctx: Context = context();
-    require(ctx.sender == self.owner, "Insufficient privelegies");
-    send(SendParameters{
-      to: self.owner,
-      value: myBalance() - ton("0.1"),
-      mode: SendRemainingValue + SendIgnoreErrors,
-      bounce: true,
-      body: AdminFetchProfit{ queryId: 0 }.toCell()
-    });
+  receive(msg: AdminWithdrawalProfit) { // owner contract -> AdminWithdrawalProfit Message -> Task5 contract -> AdminFetchProfit Message -> owner contract
+    // let ctx: Context = context();
+    // require(ctx.sender == self.owner, "Insufficient privelegies");
+    // send(SendParameters{
+    //   to: self.owner,
+    //   value: myBalance() - ton("0.1"),
+    //   mode: SendRemainingValue + SendIgnoreErrors,
+    //   bounce: true,
+    //   body: AdminFetchProfit{ queryId: 0 }.toCell()
+    // });
   }
 
-  receive(msg: AdminWithdrawalAllNFTs) {
-    let ctx: Context = context();
-    let minimalCoins: Int = (1 + self.nextNftIndex * 8 / 100) * pow(10, 9);
-    require(myBalance() >= minimalCoins, "Insufficent funds");
-    require(ctx.sender == self.owner, "Invalid sender");
+  receive(msg: AdminWithdrawalAllNFTs) { // owner contract -> AdminWithdrawalAllNFTs Message -> Task5 contract -> Transfer Message -> each nft item contract
+    // let ctx: Context = context();
+    // let minimalCoins: Int = (1 + self.nextNftIndex * 8 / 100) * pow(10, 9);
+    // require(myBalance() >= minimalCoins, "Insufficent funds");
+    // require(ctx.sender == self.owner, "Invalid sender");
 
-    let i: Int = 0;
-    repeat (self.nextNftIndex) {
-      let getNftAddress: Address? = self.nftsMap.get(i);
-      send(SendParameters{
-        to: getNftAddress!!,
-        value: 0,
-        mode: SendIgnoreErrors,
-        bounce: true,
-        body: Transfer {
-          queryId: 0,
-          newOwner: self.owner,
-          responseDestination: self.owner,
-          customPayload: null,
-          forwardAmount: 0, 
-          forwardPayload: emptySlice()
-        }.toCell()
-      });
-      i = i + 1;
-    }
+    // let i: Int = 0;
+    // let getNftAddress: Address? = null;
+    // repeat (self.nextNftIndex) {
+    //   getNftAddress = self.nftsMap.get(i);
+    //   send(SendParameters{
+    //     to: getNftAddress!!,
+    //     value: 0,
+    //     mode: SendIgnoreErrors,
+    //     bounce: true,
+    //     body: Transfer {
+    //       queryId: 0,
+    //       newOwner: self.owner,
+    //       responseDestination: self.owner,
+    //       customPayload: null,
+    //       forwardAmount: 0, 
+    //       forwardPayload: emptySlice()
+    //     }.toCell()
+    //   });
+    //   i = i + 1;
+    // }
   }
 
   get fun profit(): Int { 
