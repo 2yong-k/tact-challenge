@@ -122,8 +122,8 @@ contract Task4 with Deployable {
     } else {
       send(SendParameters{
         to: msg.nftAddress,
-        value: 0,
-        mode: SendRemainingBalance + SendIgnoreErrors,
+        value: myBalance() - context().value - ton("0.01"),
+        mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
           queryId: 0,
