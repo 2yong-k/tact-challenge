@@ -142,7 +142,12 @@ contract Task4 with Deployable {
   }
 
   get fun time(): Int {
-    return self.nftLockTime;
+    let remainingTime: Int = self.nftLockTime - now();
+    if (remainingTime > 0) {
+      return remainingTime;
+    } else {
+      return 0;
+    }
   }
 
   get fun nft(): Address? {
