@@ -95,7 +95,7 @@ contract Task4 with Deployable {
         body: Transfer {
           queryId: 0,
           newOwner: msg.prevOwner,
-          responseDestination: myAddress(),
+          responseDestination: msg.prevOwner,
           customPayload: null ,
           forwardAmount: ton("0.01"), 
           forwardPayload: msg.forwardPayload
@@ -124,12 +124,12 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: msg.nftAddress,
         value: 0,
-        mode: SendRemainingBalance + SendIgnoreErrors,
+        mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
           queryId: 0,
           newOwner: self.nftOwner!!,
-          responseDestination: myAddress(),
+          responseDestination: self.nftOwner!!,
           customPayload: null,
           forwardAmount: ton("0.01"),
           forwardPayload: emptySlice()
