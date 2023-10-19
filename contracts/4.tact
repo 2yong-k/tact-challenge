@@ -90,7 +90,7 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: ctx.sender,
         value: 0,
-        mode: SendIgnoreErrors,
+        mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
           queryId: 0,
@@ -116,14 +116,14 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: ctx.sender,
         value: 0,
-        mode: SendIgnoreErrors,
+        mode: SendRemainingValue + SendIgnoreErrors,
         body: "NFT is still locked".asComment()
       });   
     } else {
       send(SendParameters{
         to: msg.nftAddress,
-        value: myBalance() - context().value - ton("0.01"),
-        mode: SendRemainingValue + SendIgnoreErrors,
+        value: 0,
+        mode: SendRemainingBalance + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
           queryId: 0,

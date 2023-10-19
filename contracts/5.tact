@@ -119,7 +119,7 @@ contract Task5 with Deployable {
       if (ctx.value < ton("2.1")) { // if fail?
         send(SendParameters{
           to: ctx.sender,
-          value: 0,
+          value: ctx.value,
           mode: SendRemainingValue + SendIgnoreErrors,
           bounce: true,
           body: Transfer {
@@ -140,7 +140,7 @@ contract Task5 with Deployable {
         send(SendParameters{
           to: randomNftAddress!!,
           value: ctx.value - ton("2.0"),
-          mode: SendIgnoreErrors,
+          mode: SendRemainingValue + SendIgnoreErrors,
           bounce: true,
           body: Transfer {
             queryId: msg.queryId,
@@ -164,7 +164,7 @@ contract Task5 with Deployable {
     send(SendParameters{
       to: self.owner,
       value: myBalance() - ton("0.1"),
-      mode: SendIgnoreErrors,
+      mode: SendRemainingValue + SendIgnoreErrors,
       bounce: true,
       body: AdminFetchProfit{ queryId: msg.queryId }.toCell()
     });
@@ -183,7 +183,7 @@ contract Task5 with Deployable {
       send(SendParameters{
         to: getNftAddress!!,
         value: 0,
-        mode: SendPayGasSeparately + SendIgnoreErrors,
+        mode: SendIgnoreErrors,
         bounce: true,
         body: Transfer {
           queryId: msg.queryId,
