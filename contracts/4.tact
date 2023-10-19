@@ -84,33 +84,32 @@ contract Task4 with Deployable {
     self.nftOwner = null;
   }
 
-  receive(msg: OwnershipAssigned) { // nft item contract -> OwnershipAssigned message -> nft lock contract -> Transfer message -> nft item contract
+  receive(msg: OwnershipAssigned) { // nft owner contract -> Transfer message -> nft item contract -> OwnershipAssigned message -> nft lock contract -> Lock or (Transfer message -> nft item contract)
     let ctx: Context = context();
-    if (self.nftAddress != null && self.nftOwner != null && self.nftLockTime != 0) {
+    if (self.nftAddress != null) {  // if locked?
       send(SendParameters{
         to: ctx.sender,
         value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
-          queryId: self.seed,
+          queryId: 0,
           newOwner: msg.prevOwner,
-          responseDestination: ctx.sender,
+          responseDestination: msg.prevOwner,
           customPayload: null,
           forwardAmount: 0, 
-          forwardPayload: msg.forwardPayload
+          forwardPayload: emptySlice()
         }.toCell()
       });
-    } else {
+    } else {  // if locked yet?
       self.nftLockTime = msg.forwardPayload.loadUint(32);
       self.nftAddress = ctx.sender;
       self.nftOwner = msg.prevOwner;
     }
   }
 
-  receive(msg: NftWithdrawal) { // owner contract -> NftWithdrawal Message -> nft lock contract -> Transfer message -> nft item contract
+  receive(msg: NftWithdrawal) { // nft owner contract -> NftWithdrawal Message -> nft lock contract -> Transfer message -> nft item contract
     let ctx: Context = context();
-    require(self.nftAddress != null && self.nftOwner != null && self.nftLockTime != 0, "Invalid");
     require(ctx.sender == self.nftOwner, "Invalid sender");
 
     if (self.nftLockTime - now() > 0) {
@@ -124,12 +123,12 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: msg.nftAddress,
         value: 0,
-        mode: SendRemainingValue + SendIgnoreErrors,
+        mode: SendRemainingBalance + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
-          queryId: self.seed,
+          queryId: 0,
           newOwner: self.nftOwner!!,
-          responseDestination: msg.nftAddress,
+          responseDestination: self.nftOwner!!,
           customPayload: null,
           forwardAmount: 0,
           forwardPayload: emptySlice()
@@ -142,12 +141,7 @@ contract Task4 with Deployable {
   }
 
   get fun time(): Int {
-    let remainingTime: Int = self.nftLockTime - now();
-    if (remainingTime > 0) {
-      return remainingTime;
-    } else {
-      return 0;
-    }
+    return self.nftLockTime;
   }
 
   get fun nft(): Address? {
