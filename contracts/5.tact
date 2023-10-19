@@ -116,10 +116,10 @@ contract Task5 with Deployable {
       self.nftsMap.set(self.nextNftIndex, ctx.sender);
       self.nextNftIndex = self.nextNftIndex + 1;
     } else {  // if user?
-      if (ctx.value < ton("2.1")) { // if value < ton("2.1")?
+      if (ctx.value < ton("2.1")) { // if fail?
         send(SendParameters{
           to: ctx.sender,
-          value: ctx.value,
+          value: 0,
           mode: SendRemainingValue + SendIgnoreErrors,
           bounce: true,
           body: Transfer {
@@ -127,11 +127,11 @@ contract Task5 with Deployable {
             newOwner: msg.prevOwner,
             responseDestination: msg.prevOwner,
             customPayload: null,
-            forwardAmount: 0, 
+            forwardAmount: 0,
             forwardPayload: emptySlice()
           }.toCell()
         });
-      } else {  // if value >= ton("2.1")
+      } else {  // if success?
         self.nftsMap.set(self.nextNftIndex, ctx.sender);
 
         let randomNumber: Int = random(0, self.nextNftIndex);
@@ -140,7 +140,7 @@ contract Task5 with Deployable {
         send(SendParameters{
           to: randomNftAddress!!,
           value: ctx.value - ton("2.0"),
-          mode: SendRemainingValue + SendIgnoreErrors,
+          mode: SendIgnoreErrors,
           bounce: true,
           body: Transfer {
             queryId: msg.queryId,
@@ -164,7 +164,7 @@ contract Task5 with Deployable {
     send(SendParameters{
       to: self.owner,
       value: myBalance() - ton("0.1"),
-      mode: SendRemainingValue + SendIgnoreErrors,
+      mode: SendIgnoreErrors,
       bounce: true,
       body: AdminFetchProfit{ queryId: msg.queryId }.toCell()
     });
@@ -172,8 +172,8 @@ contract Task5 with Deployable {
 
   receive(msg: AdminWithdrawalAllNFTs) { // owner contract -> AdminWithdrawalAllNFTs Message -> Task5 contract -> Transfer Message -> each nft item contract
     let ctx: Context = context();
-    let minimalCoins: Int = (1 + self.nextNftIndex * 8 / 100) * pow(10, 9);
-    require(myBalance() >= minimalCoins, "Insufficent funds");
+    let minimalCoins: Int = (1 + self.nextNftIndex * 8 / 100);
+    require(myBalance() >= ton(minimalCoins.toCoinsString()), "Insufficent funds");
     require(ctx.sender == self.owner, "Invalid sender");
 
     let i: Int = 0;
@@ -183,7 +183,7 @@ contract Task5 with Deployable {
       send(SendParameters{
         to: getNftAddress!!,
         value: 0,
-        mode: SendIgnoreErrors,
+        mode: SendPayGasSeparately + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
           queryId: msg.queryId,
