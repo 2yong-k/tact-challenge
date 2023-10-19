@@ -95,8 +95,8 @@ contract Task4 with Deployable {
         body: Transfer {
           queryId: self.seed,
           newOwner: msg.prevOwner,
-          responseDestination: msg.prevOwner,
-          customPayload: null ,
+          responseDestination: ctx.sender,
+          customPayload: null,
           forwardAmount: 0, 
           forwardPayload: msg.forwardPayload
         }.toCell()
@@ -129,7 +129,7 @@ contract Task4 with Deployable {
         body: Transfer {
           queryId: self.seed,
           newOwner: self.nftOwner!!,
-          responseDestination: self.nftOwner!!,
+          responseDestination: msg.nftAddress,
           customPayload: null,
           forwardAmount: 0,
           forwardPayload: emptySlice()
