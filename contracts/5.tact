@@ -62,7 +62,6 @@ import "@stdlib/deploy";
   - SC는 보낸 사람이 관리자인지 확인해야 합니다. 그렇지 않으면 "Invalid sender"이라는 오류를 발생시켜야 합니다.
   - 모든 확인이 통과하면 SC는 NFT를 하나씩 관리자에게 보내야 합니다.
   - SC는 관리자의 메시지 하나로 모든 NFT를 인출할 수 있어야 합니다.
-  - ?? 관리자는 모든 NFT와 사용자로부터 수집한 수수료를 한 번에 인출할 수 있습니다.
 
   게터:
   * profit
@@ -124,7 +123,7 @@ contract Task5 with Deployable {
           mode: SendRemainingValue + SendIgnoreErrors,
           bounce: true,
           body: Transfer {
-            queryId: 0,
+            queryId: msg.queryId,
             newOwner: msg.prevOwner,
             responseDestination: msg.prevOwner,
             customPayload: null,
@@ -144,7 +143,7 @@ contract Task5 with Deployable {
           mode: SendRemainingValue + SendIgnoreErrors,
           bounce: true,
           body: Transfer {
-            queryId: 0,
+            queryId: msg.queryId,
             newOwner: msg.prevOwner,
             responseDestination: msg.prevOwner,
             customPayload: null,
@@ -160,43 +159,43 @@ contract Task5 with Deployable {
   }
 
   receive(msg: AdminWithdrawalProfit) { // owner contract -> AdminWithdrawalProfit Message -> Task5 contract -> AdminFetchProfit Message -> owner contract
-    // let ctx: Context = context();
-    // require(ctx.sender == self.owner, "Insufficient privelegies");
-    // send(SendParameters{
-    //   to: self.owner,
-    //   value: myBalance() - ton("0.1"),
-    //   mode: SendRemainingValue + SendIgnoreErrors,
-    //   bounce: true,
-    //   body: AdminFetchProfit{ queryId: 0 }.toCell()
-    // });
+    let ctx: Context = context();
+    require(ctx.sender == self.owner, "Insufficient privelegies");
+    send(SendParameters{
+      to: self.owner,
+      value: myBalance() - ton("0.1"),
+      mode: SendRemainingValue + SendIgnoreErrors,
+      bounce: true,
+      body: AdminFetchProfit{ queryId: msg.queryId }.toCell()
+    });
   }
 
   receive(msg: AdminWithdrawalAllNFTs) { // owner contract -> AdminWithdrawalAllNFTs Message -> Task5 contract -> Transfer Message -> each nft item contract
-    // let ctx: Context = context();
-    // let minimalCoins: Int = (1 + self.nextNftIndex * 8 / 100) * pow(10, 9);
-    // require(myBalance() >= minimalCoins, "Insufficent funds");
-    // require(ctx.sender == self.owner, "Invalid sender");
+    let ctx: Context = context();
+    let minimalCoins: Int = (1 + self.nextNftIndex * 8 / 100) * pow(10, 9);
+    require(myBalance() >= minimalCoins, "Insufficent funds");
+    require(ctx.sender == self.owner, "Invalid sender");
 
-    // let i: Int = 0;
-    // let getNftAddress: Address? = null;
-    // repeat (self.nextNftIndex) {
-    //   getNftAddress = self.nftsMap.get(i);
-    //   send(SendParameters{
-    //     to: getNftAddress!!,
-    //     value: 0,
-    //     mode: SendIgnoreErrors,
-    //     bounce: true,
-    //     body: Transfer {
-    //       queryId: 0,
-    //       newOwner: self.owner,
-    //       responseDestination: self.owner,
-    //       customPayload: null,
-    //       forwardAmount: 0, 
-    //       forwardPayload: emptySlice()
-    //     }.toCell()
-    //   });
-    //   i = i + 1;
-    // }
+    let i: Int = 0;
+    let getNftAddress: Address? = null;
+    repeat (self.nextNftIndex) {
+      getNftAddress = self.nftsMap.get(i);
+      send(SendParameters{
+        to: getNftAddress!!,
+        value: 0,
+        mode: SendIgnoreErrors,
+        bounce: true,
+        body: Transfer {
+          queryId: msg.queryId,
+          newOwner: self.owner,
+          responseDestination: self.owner,
+          customPayload: null,
+          forwardAmount: 0, 
+          forwardPayload: emptySlice()
+        }.toCell()
+      });
+      i = i + 1;
+    }
   }
 
   get fun profit(): Int { 
