@@ -173,8 +173,8 @@ contract Task5 with Deployable {
 
   receive(msg: AdminWithdrawalAllNFTs) {
     let ctx: Context = context();
-    let minimalCoins: Int = (1 + self.nextNftIndex * 8 / 100) * 1000000000;
-    require(ctx.value >= minimalCoins, "Insufficent funds");
+    let minimalCoins: Int = (1 + self.nextNftIndex * 8 / 100) * pow(10, 9);
+    require(myBalance() >= minimalCoins, "Insufficent funds");
     require(ctx.sender == self.owner, "Invalid sender");
 
     let i: Int = 0;
