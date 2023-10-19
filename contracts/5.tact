@@ -40,27 +40,21 @@ import "@stdlib/deploy";
 /*
   TASK 5 - NFT 랜덤 스왑
   스마트 컨트랙트는 다양한 NFT를 보유하고 있습니다.
-  사용자는 자신의 NFT를 스마트 계약으로 보냅니다.
-  이때 2.1 TON(관리자의 이익을 위한 2 TON 및 가스 비용을 위한 0.1 TON)이 첨부됩니다(스왑 수수료로 사용됩니다).
-  스마트 컨트랙트는 사용 가능한 NFT 중에서 몇 개의 NFT(새로운 NFT를 포함)를 무작위로 선택하여 사용자에게 교환합니다(일부 경우에는 사용자의 NFT를 반환할 수도 있습니다).
-  관리자는 스왑 로직 없이 NFT를 입금할 수 있습니다.
-  관리자로부터 받은 모든 NFT는 예치된 것으로 간주됩니다.
-  관리자는 NFT를 스왑할 수 없습니다.
-  관리자는 모든 NFT와 사용자로부터 수집한 수수료를 한 번에 인출할 수 있습니다.
   스마트 컨트랙트가 보유한 NFT 주소를 반환하는 getter를 구현해야 합니다.
   수집된 관리자 수익을 반환하는 getter를 구현해야 합니다.
 
   상세하게, 스마트 계약(SC)은 다음과 같은 로직을 가져야 합니다:
   메시지:
   * OwnershipAssigned
-  - prevOwner가 소유자(admin)주소인 경우 NFT를 컬렉션에 추가합니다.
+  - prevOwner가 소유자(admin)주소인 경우 NFT를 컬렉션에 추가합니다. 관리자는 스왑이 불가능하며 스왑 로직 없이 NFT를 입금할 수 있다.
+  - 사용자는 자신의 NFT를 스마트 계약으로 보냅니다. 이때 2.1 TON(관리자의 이익을 위한 2 TON 및 가스 비용을 위한 0.1 TON)이 첨부됩니다(스왑 수수료로 사용됩니다).
   - 첨부된 TON의 가치가 2.1 TON 미만이면 실행을 중지하고 NFT를 반환해야 합니다. 단, 스마트 컨트랙트의 잔액을 손실 없이 환불 처리할 수 있는 경우에만 이루어져야 합니다.
-  - 스마트 컨트랙트가 가지고 있는 모든 NFT에서 보낼 NFT를 무작위로 선택합니다.
+  - 사용자에게 받은 NFT를 포함하여 스마트 컨트랙트가 가지고 있는 모든 NFT에서 보낼 NFT를 무작위로 선택합니다.
   - 선택된 NFT를 발신자에게 모든 잔액(관리자 이익인 수수료를 제외)과 함께 보내야 합니다. 다시 말해, 계약의 잔액은 정확히 2 TON 늘어나고 일부 수신 TON은 가스로 사용되며 남은 수신 TON은 발신자에게 환불되어야 합니다.
 
   * AdminWithdrawalProfit
   - SC는 보낸 사람이 관리자인지 확인해야 합니다. 그렇지 않으면 "Insufficient privelegies"이라는 오류를 발생시킵니다.
-  - SC는 수집된 수수료를 0.1 TON(스토리지를 위해 예약된 금액)을 제외한 나머지를 관리자에게 보내야 합니다.
+  - SC는 수집된 수수료를 0.1 TON(스토리지를 위해 예약된 금액)을 제외한 나머지를 관리자에게 보내야 합니다. AdminFetchProfit
   -> 다시 말해, 이 작업 후에 컨트랙트의 잔액은 0.1 TON(스토리지)이어야 하고 나머지는 관리자에게 보내져야 합니다.
 
   * AdminWithdrawalAllNFTs
@@ -68,6 +62,7 @@ import "@stdlib/deploy";
   - SC는 보낸 사람이 관리자인지 확인해야 합니다. 그렇지 않으면 "Invalid sender"이라는 오류를 발생시켜야 합니다.
   - 모든 확인이 통과하면 SC는 NFT를 하나씩 관리자에게 보내야 합니다.
   - SC는 관리자의 메시지 하나로 모든 NFT를 인출할 수 있어야 합니다.
+  - ?? 관리자는 모든 NFT와 사용자로부터 수집한 수수료를 한 번에 인출할 수 있습니다.
 
   게터:
   * profit
@@ -116,9 +111,52 @@ contract Task5 with Deployable {
     self.owner = owner;
   }
 
-  receive(msg: OwnershipAssigned) {
-    // e.g. self.nextNftIndex = self.nextNftIndex + 1;
-    // e.g. self.nftsMap.set(1, ctx.sender);
+  receive(msg: OwnershipAssigned) { // owner contract -> Transfer Message -> nft item contract -> OwnershipAssigned Message -> Task5 contract -> Trasfer Message -> nft item contract
+    let ctx: Context = context();
+    if (msg.prevOwner == self.owner) {  // if owner?
+      self.nftsMap.set(self.nextNftIndex, ctx.sender);
+      self.nextNftIndex = self.nextNftIndex + 1;
+    } else {  // if user?
+      if (ctx.value < ton("2.1")) { // if value < ton("2.1")?
+        send(SendParameters{
+          to: ctx.sender,
+          value: ctx.value,
+          mode: SendRemainingValue + SendIgnoreErrors,
+          bounce: true,
+          body: Transfer {
+            queryId: 0,
+            newOwner: msg.prevOwner,
+            responseDestination: msg.prevOwner,
+            customPayload: null,
+            forwardAmount: 0, 
+            forwardPayload: emptySlice()
+          }.toCell()
+        });
+      } else {  // if value >= ton("2.1")
+        self.nftsMap.set(self.nextNftIndex, ctx.sender);
+
+        let randomNumber: Int = random(0, self.nextNftIndex);
+        let randomNftAddress: Address? = self.nftsMap.get(randomNumber);
+
+        send(SendParameters{
+          to: randomNftAddress!!,
+          value: ctx.value - ton("2.0"),
+          mode: SendRemainingValue + SendIgnoreErrors,
+          bounce: true,
+          body: Transfer {
+            queryId: 0,
+            newOwner: msg.prevOwner,
+            responseDestination: msg.prevOwner,
+            customPayload: null,
+            forwardAmount: 0, 
+            forwardPayload: emptySlice()
+          }.toCell()
+        });
+
+        self.nftsMap.set(randomNumber, self.nftsMap.get(self.nextNftIndex));
+        self.nftsMap.set(self.nextNftIndex, null);
+      }
+    }
   }
 
   receive(msg: AdminWithdrawalProfit) {
@@ -126,6 +164,10 @@ contract Task5 with Deployable {
   }
 
   receive(msg: AdminWithdrawalAllNFTs) {
+
+  }
+
+  receive(msg: AdminFetchProfit) {
 
   }
 
