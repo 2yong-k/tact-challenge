@@ -90,7 +90,7 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: ctx.sender,
         value: 0,
-        mode: SendRemainingValue + SendIgnoreErrors,
+        mode: SendIgnoreErrors,
         bounce: true,
         body: Transfer {
           queryId: 0,
@@ -116,7 +116,7 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: ctx.sender,
         value: 0,
-        mode: SendRemainingValue + SendIgnoreErrors,
+        mode: SendIgnoreErrors,
         body: "NFT is still locked".asComment()
       });   
     } else {
