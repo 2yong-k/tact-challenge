@@ -126,7 +126,7 @@ contract Task4 with Deployable {
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
-          queryId: 0,
+          queryId: msg.queryId,
           newOwner: ctx.sender,
           responseDestination: myAddress(),
           customPayload: null,
