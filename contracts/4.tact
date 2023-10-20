@@ -27,28 +27,31 @@ import "@stdlib/deploy";
 */
 
 /*
-  TASK 4 - NFT 록커
-  NFT를 소유자가 지정한 기간 동안 잠글 수 있는 스마트 컨트랙트을 구현해야 합니다.
+  TASK 4 - NFT 보관함
+  NFT를 소유자가 지정한 기간 동안 잠길 수 있는 스마트 컨트랙트를 구현해야 합니다.
   이 스마트 계약은 다음과 같은 메시지와 게터를 처리하는 로직을 포함해야 합니다.
-  
-  Messages:
-  * OwnershipAssigned
-    - NFT, 해당 NFT가 잠길 기간으로 지정된 시간(forwardPayload message에서 unint32로 전송), NFT 송신자(prevOwner)의 주소를 수신
-    - 스마트 컨트랙트가 이미 NFT를 보유하고 있다면 수신된 NFT를 발신자에게 반환합니다.
-  * NftWithdrawal
-    - 잠긴 NFT를 인출하도록 요청합니다.
-    - 보낸 사람이 소유자가 아닌 경우("OwnershipAssigned"에서 prevOwner 주소로 전송된 것과 다른 경우) "Invalid sender" 오류를 발생시킵니다.
-    - 시간이 경과하지 않았다면 TON의 "message with text comment" 표준에 따라 "NFT is still locked"라는 코멘트를 포함하여 발신자에게 메시지를 보냅니다.
-    - 그렇지 않으면(모든 것이 정상이면) 잠긴 NFT를 소유자에게 모든 남은 TON 잔액과 함께 반환합니다.
-    참고: 체크의 순서가 중요합니다("sender is not the owner"와 "time has not passed"라는 조건이 동시에 해당되는 경우 "Invalid sender" 오류가 우선적으로 적용됩니다).
 
-  Getters:
+  메시지:
+  * OwnershipAssigned
+  - 잠길 NFT + 시간(forwardPayload message에서 uint32로 전송) + NFT 송신자(prevOwner)의 주소를 수신한다.
+  - 이미 스마트 계약이 NFT를 보유하고 있다면 수신된 NFT를 발신자에게 반환합니다.
+
+  * NftWithdrawal
+  - 잠긴 NFT를 인출하도록 요청합니다.
+  - 보낸 사람이 owner가 아닌 경우("OwnershipAssigned"에서 prevOwner 주소로 전송된 것과 다른 경우) "Invalid sender"  오류를 발생시킵니다.
+  - 시간이 경과하지 않았다면 TON의 "message with text comment" 표준에 따라 "NFT is still locked"라는 코멘트를 포함하여 발신자에게 메시지를 보냅니다.
+  - 그렇지 않으면(모든 것이 정상이면) 잠긴 NFT를 소유자에게 모든 남은 TON 잔액과 함께 반환합니다.
+  -> 참고: 체크의 순서가 중요합니다("보낸 사람이 소유자가 아니고"와 "시간이 경과하지 않았다"라는 조건이 동시에 해당되는 경우 "잘못된 보내는 사람" 오류가 우선적으로 적용됩니다).
+
+  게터:
   * time
-    - 잠금 시간이 얼마나 남았는지 가져옵니다.
+  - 잠금 시간이 얼마나 남았는지 가져옵니다.
+
   * nft
-    - 잠긴 NFT의 주소를 가져옵니다.
+  - 잠긴 NFT의 주소를 가져옵니다.
+
   * owner
-    - 잠긴 NFT의 소유자를 가져옵니다("OwnershipAssigned"에서 prevOwner로 전송된 값).
+  - 잠긴 NFT의 소유자를 가져옵니다("OwnershipAssigned"에서 prevOwner로 전송된 값).
 */
 
 message(0x05138d91) OwnershipAssigned {
@@ -84,42 +87,39 @@ contract Task4 with Deployable {
     self.nftOwner = null;
   }
 
-  receive(msg: OwnershipAssigned) { // nft owner contract -> Transfer message -> nft item contract -> OwnershipAssigned message -> nft lock contract -> Lock or (Transfer message -> nft item contract)
+  receive(msg: OwnershipAssigned) { // nft owner contract -> Transfer message -> nft item contract -> OwnershipAssigned message -> nft locker contract -> Lock or (Transfer message -> nft item contract)
     let ctx: Context = context();
-    if (self.nftAddress != null) {  // if locked?
+    let tempNftLockTime: Int = msg.forwardPayload.loadUint(32);
+    let tempNftAddress: Address = ctx.sender;
+    let tempNftOwner: Address = msg.prevOwner;
+
+    if (self.nftAddress == null) { // if locked yet?
+      self.nftLockTime = tempNftLockTime;
+      self.nftAddress = tempNftAddress;
+      self.nftOwner = tempNftOwner;
+    } else {  // if locked?
       send(SendParameters{
-        to: ctx.sender,
+        to: tempNftAddress,
         value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
-          queryId: 0,
-          newOwner: msg.prevOwner,
-          responseDestination: msg.prevOwner,
+          queryId: msg.queryId,
+          newOwner: tempNftOwner,
+          responseDestination: tempNftOwner,
           customPayload: null,
           forwardAmount: 0, 
           forwardPayload: emptySlice()
         }.toCell()
       });
-    } else {  // if locked yet?
-      self.nftLockTime = msg.forwardPayload.loadUint(32);
-      self.nftAddress = ctx.sender;
-      self.nftOwner = msg.prevOwner;
     }
   }
 
-  receive(msg: NftWithdrawal) { // nft owner contract -> NftWithdrawal Message -> nft lock contract -> Transfer message -> nft item contract
+  receive(msg: NftWithdrawal) { // nft owner contract -> NftWithdrawal Message -> nft locker contract -> Transfer message -> nft item contract
     let ctx: Context = context();
-    require(ctx.sender == self.nftOwner, "Invalid sender");
+    require(self.nftOwner == ctx.sender, "Invalid sender");
 
-    if (self.nftLockTime - now() > 0) {
-      send(SendParameters{
-        to: ctx.sender,
-        value: 0,
-        mode: SendRemainingValue + SendIgnoreErrors,
-        body: "NFT is still locked".asComment()
-      });   
-    } else {
+    if (self.nftLockTime < now()) { // if past time?
       send(SendParameters{
         to: msg.nftAddress,
         value: 0,
@@ -134,9 +134,17 @@ contract Task4 with Deployable {
           forwardPayload: emptySlice()
         }.toCell()
       });
-      self.nftLockTime = 0;
-      self.nftAddress = null;
-      self.nftOwner = null;
+      // self.nftLockTime = 0;
+      // self.nftAddress = null;
+      // self.nftOwner = null;
+    } else {  // if time yet?
+      send(SendParameters{
+        to: ctx.sender,
+        value: 0,
+        mode: SendRemainingValue + SendIgnoreErrors,
+        bounce: true,
+        body: "NFT is still locked".asComment()
+      });
     }
   }
 
