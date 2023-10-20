@@ -118,6 +118,7 @@ contract Task4 with Deployable {
   receive(msg: NftWithdrawal) { // nft owner contract -> NftWithdrawal Message -> nft locker contract -> Transfer message -> nft item contract
     let ctx: Context = context();
     require(self.nftOwner == ctx.sender, "Invalid sender");
+    require(self.nftAddress == msg.nftAddress, "Invalid address");
 
     if (self.nftLockTime < now()) { // if past time?
       send(SendParameters{
