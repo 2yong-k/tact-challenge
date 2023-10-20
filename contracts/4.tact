@@ -122,8 +122,8 @@ contract Task4 with Deployable {
     if (self.nftLockTime < now()) { // if past time?
       send(SendParameters{
         to: msg.nftAddress,
-        value: 0,
-        mode: SendRemainingBalance + SendIgnoreErrors,
+        value: myBalance() - ctx.value - ton("0.1"),
+        mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer {
           queryId: 0,
