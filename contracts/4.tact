@@ -116,37 +116,31 @@ contract Task4 with Deployable {
   }
 
   receive(msg: NftWithdrawal) { // nft owner contract -> NftWithdrawal Message -> nft locker contract -> Transfer message -> nft item contract
-    // let ctx: Context = context();
-    // require(self.nftOwner == ctx.sender, "Invalid sender");
-    // require(self.nftAddress == msg.nftAddress, "Invalid address");
+    let ctx: Context = context();
+    require(self.nftOwner == ctx.sender, "Invalid sender");
+    require(self.nftAddress == msg.nftAddress, "Invalid address");
 
-    // if (self.nftLockTime < now()) { // if past time?
-    //   send(SendParameters{
-    //     to: msg.nftAddress,
-    //     value: 0,
-    //     mode: SendRemainingBalance + SendIgnoreErrors,
-    //     bounce: true,
-    //     body: Transfer {
-    //       queryId: msg.queryId,
-    //       newOwner: ctx.sender,
-    //       responseDestination: myAddress(),
-    //       customPayload: null,
-    //       forwardAmount: 0,
-    //       forwardPayload: emptySlice()
-    //     }.toCell()
-    //   });
-    //   self.nftLockTime = 0;
-    //   self.nftAddress = null;
-    //   self.nftOwner = null;
-    // } else {  // if time yet?
-    //   send(SendParameters{
-    //     to: ctx.sender,
-    //     value: 0,
-    //     mode: SendRemainingValue + SendIgnoreErrors,
-    //     bounce: true,
-    //     body: "NFT is still locked".asComment()
-    //   });
-    // }
+    if (self.nftLockTime < now()) { // if past time?
+      send(SendParameters{
+        to: msg.nftAddress,
+        value: 0,
+        mode: SendRemainingBalance + SendIgnoreErrors,
+        bounce: true,
+        body: Transfer {
+          queryId: msg.queryId,
+          newOwner: ctx.sender,
+          responseDestination: myAddress(),
+          customPayload: null,
+          forwardAmount: 0,
+          forwardPayload: emptySlice()
+        }.toCell()
+      });
+      self.nftLockTime = 0;
+      self.nftAddress = null;
+      self.nftOwner = null;
+    } else {  // if time yet?
+      self.reply("NFT is still locked".asComment());
+    }
   }
 
   get fun time(): Int {
