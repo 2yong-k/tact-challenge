@@ -134,9 +134,9 @@ contract Task4 with Deployable {
           forwardPayload: emptySlice()
         }.toCell()
       });
-      // self.nftLockTime = 0;
-      // self.nftAddress = null;
-      // self.nftOwner = null;
+      self.nftLockTime = 0;
+      self.nftAddress = null;
+      self.nftOwner = null;
     } else {  // if time yet?
       send(SendParameters{
         to: ctx.sender,
