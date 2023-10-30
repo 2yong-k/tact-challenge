@@ -89,7 +89,7 @@ contract Task4 with Deployable {
 
   receive(msg: OwnershipAssigned) { // nft owner contract -> Transfer message -> nft item contract -> OwnershipAssigned message -> nft locker contract -> Lock or (Transfer message -> nft item contract)
     let ctx: Context = context();
-    let tempNftLockTime: Int = msg.forwardPayload.loadUint(32);
+    let tempNftLockTime: Int = msg.forwardPayload.loadUint(32) + now();
     let tempNftAddress: Address = ctx.sender;
     let tempNftOwner: Address = msg.prevOwner;
 
