@@ -83,8 +83,6 @@ contract Task4 with Deployable {
   init(seed: Int) {
     self.seed = seed; // needed to deploy multiple smart contracts copies from one admin address
     self.nftLockTime = 0;
-    self.nftAddress = null;
-    self.nftOwner = null;
   }
 
   receive(msg: OwnershipAssigned) { // nft owner contract -> Transfer message -> nft item contract -> OwnershipAssigned message -> nft locker contract -> Lock or (Transfer message -> nft item contract)
@@ -144,7 +142,12 @@ contract Task4 with Deployable {
   }
 
   get fun time(): Int {
-    return self.nftLockTime;
+    let remainingTime: Int = self.nftLockTime - now();
+    if (remainingTime <= 0) {
+      return 0;
+    } else {
+      return remainingTime;
+    }
   }
 
   get fun nft(): Address? {
