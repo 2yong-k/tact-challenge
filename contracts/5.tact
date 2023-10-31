@@ -119,7 +119,7 @@ contract Task5 with Deployable {
       if (ctx.value < ton("2.1")) { // if fail?
         send(SendParameters{
           to: ctx.sender,
-          value: ctx.value,
+          value: 0,
           mode: SendRemainingValue + SendIgnoreErrors,
           bounce: true,
           body: Transfer {
@@ -134,13 +134,15 @@ contract Task5 with Deployable {
       } else {  // if success?
         self.nftsMap.set(self.nextNftIndex, ctx.sender);
 
+        nativeReserve(ton("2.0"), 0);
+
         let randomNumber: Int = random(0, self.nextNftIndex);
         let randomNftAddress: Address? = self.nftsMap.get(randomNumber);
 
         send(SendParameters{
           to: randomNftAddress!!,
-          value: ctx.value - ton("2.0"),
-          mode: SendRemainingValue + SendIgnoreErrors,
+          value: 0,
+          mode: SendRemainingBalance + SendIgnoreErrors,
           bounce: true,
           body: Transfer {
             queryId: msg.queryId,
@@ -159,12 +161,15 @@ contract Task5 with Deployable {
   }
 
   receive(msg: AdminWithdrawalProfit) { // owner contract -> AdminWithdrawalProfit Message -> Task5 contract -> AdminFetchProfit Message -> owner contract
-    let ctx: Context = context();
-    require(ctx.sender == self.owner, "Insufficient privelegies");
+    require(sender() == self.owner, "Insufficient privelegies");
+    require(myBalance() >= ton("0.1"), "Not enough TONs for withdrawal.");
+
+    nativeReserve(ton("0.1"), 2);
+
     send(SendParameters{
       to: self.owner,
-      value: myBalance() - ton("0.1"),
-      mode: SendRemainingValue + SendIgnoreErrors,
+      value: 0,
+      mode: SendRemainingBalance + SendIgnoreErrors,
       bounce: true,
       body: AdminFetchProfit{ queryId: msg.queryId }.toCell()
     });
@@ -182,7 +187,7 @@ contract Task5 with Deployable {
       getNftAddress = self.nftsMap.get(i);
       send(SendParameters{
         to: getNftAddress!!,
-        value: 0,
+        value: ton("0.05"),
         mode: SendIgnoreErrors,
         bounce: true,
         body: Transfer {
@@ -196,10 +201,18 @@ contract Task5 with Deployable {
       });
       i = i + 1;
     }
+
+    self.nextNftIndex = 0;
+    self.nftsMap = emptyMap();
   }
 
   get fun profit(): Int { 
-    return myBalance() - ton("0.1");
+    let remainingProfit: Int = myBalance() - ton("0.1");
+    if (remainingProfit <= 0) {
+      return 0;
+    } else {
+      return remainingProfit;
+    }
   }
   
   get fun nfts(): map<Int as uint16, Address> { 
